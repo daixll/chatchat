@@ -1,27 +1,10 @@
-#include <iostream>
-#include <string>
-#include <fstream>
 #include "RSA.h"
 
 int main(){
-    std::ifstream ifs_pub("pub_key");
-    std::string pub_key;
-    
-    std::string t;
-    while(getline(ifs_pub, t))
-        pub_key += t;
+    jiao::RSA rsa1("key/public_key.pem", "key/private_key.pem");
+    jiao::RSA rsa2("key2/public_key.pem", "key2/private_key.pem");
 
-    std::ifstream ifs_pri("pri_key");
-    std::string pri_key;
-
-    while(getline(ifs_pri, t))
-        pri_key += t;
-
-    std::string plain_text = "Hello World!";
-    std::string encrypted_text = RSA_Encrypt(pub_key, plain_text);
-    std::cout << "Encrypted text: " << encrypted_text << std::endl;
-    std::string decrypted_text = RSA_Decrypt(pri_key, encrypted_text);
-    std::cout << "Decrypted text: " << decrypted_text << std::endl;
-
+    auto res = rsa2.encrypt("C++也是调包侠");
+    std::cout << rsa1.decrypt(res);
     return 0;
 }

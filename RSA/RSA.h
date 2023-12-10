@@ -1,91 +1,112 @@
-// -lssl -lcrypto
-
-#include <memory>
-#include <string>
-#include <openssl/pem.h>
+#define DEBUG 1
+#include <openssl/evp.h>
 #include <openssl/rsa.h>
+#include <openssl/engine.h>
+#include <openssl/rand.h>
+#include <string>
+#include <fstream>
+#include <iostream>
+namespace jiao {
 
-std::string RSA_Encrypt(const std::string& public_key, const std::string& plain_text) {
-  // 将 PEM 格式的公钥转换为 RSA 结构体
-  auto rsa = RSA_new();
-  if (rsa == nullptr) {
-    throw std::runtime_error("Failed to create RSA structure");
-  }
-  if (!PEM_read_bio_RSAPublicKey(
-          BIO_new_mem_buf((const unsigned char*)public_key.c_str(), -1), rsa, nullptr, nullptr)) {
-    RSA_free(rsa);
-    throw std::runtime_error("Failed to read public key from PEM");
-  }
+class RSA {
 
-  // 检查公钥是否有效
-  if (rsa->n == nullptr || rsa->e == nullptr) {
-    RSA_free(rsa);
-    throw std::runtime_error("Public key is invalid");
-  }
+public:
+    RSA(const std::string& public_key_path, const std::string& private_key_path);
+    ~RSA();
 
-  // 将明文转换为字节数组
-  auto plain_text_bytes = reinterpret_cast<const unsigned char*>(plain_text.c_str());
-  int plain_text_length = plain_text.length();
+    std::string encrypt(const std::string& plain_text);
+    std::string decrypt(const std::string& cipher_text);
 
-  // 检查明文长度是否超过 RSA 结构体的大小
-  if (plain_text_length > RSA_size(rsa)) {
-    plain_text_length = RSA_size(rsa);
-  }
+private:
+    EVP_PKEY *pub_key;
+    EVP_PKEY *pri_key;
 
-  // 分配内存用于存储加密后的密文
-  auto encrypted_text = new unsigned char[plain_text_length];
+    void ERR(const std::string& msg) {
+        std::cerr << "错误！" << msg << std::endl;
+        exit(1);
+    }
 
-  // 使用 RSA_PKCS1_PADDING 填充方式进行公钥加密
-  int encrypted_text_length = RSA_public_encrypt(
-      plain_text_length, plain_text_bytes, encrypted_text, rsa, RSA_PKCS1_PADDING);
+    std::string read_file(const std::string& path) {
+        std::ifstream ifs(path);
+        if (!ifs) 
+            ERR("无法打开文件 " + path);
+        std::string content;
+        ifs.seekg(0, std::ios::end);
+        content.resize(ifs.tellg());
+        ifs.seekg(0, std::ios::beg);
+        ifs.read(&content[0], content.size());
+        ifs.close();
+        return content;
+    }
+};
 
-  // 检查加密是否成功
-  if (encrypted_text_length == -1) {
-    RSA_free(rsa);
-    delete[] encrypted_text;
-    throw std::runtime_error("RSA encryption failed");
-  }
 
-  // 将加密后的密文转换为字符串
-  std::string encrypted_text_string(reinterpret_cast<char*>(encrypted_text), encrypted_text_length);
-
-  // 释放内存并清理资源
-  RSA_free(rsa);
-  delete[] encrypted_text;
-
-  return encrypted_text_string;
+RSA::RSA(const std::string& public_key_path, const std::string& private_key_path) {
+    // 初始化 OpenSSL 库
+    OpenSSL_add_all_algorithms();
+    // 更强的随机数生成器
+    RAND_load_file("/dev/urandom", 32);
+    // 读取公钥和私钥
+    std::string public_key_str  = read_file(public_key_path);
+    std::string private_key_str = read_file(private_key_path);
+    // 初始化公钥
+    BIO *bio = BIO_new_mem_buf(public_key_str.c_str(), -1);
+    pub_key = PEM_read_bio_PUBKEY(bio, nullptr, nullptr, nullptr);
+    BIO_free(bio);
+    // 初始化私钥
+    bio = BIO_new_mem_buf(private_key_str.c_str(), -1);
+    pri_key = PEM_read_bio_PrivateKey(bio, nullptr, nullptr, nullptr);
+    BIO_free(bio);
 }
 
-
-std::string RSA_Decrypt(const std::string& Private_key, const std::string& Encrypted_text) {
-  // 将 PEM 格式的私钥转换为 RSA 结构体
-  BIO* bio = BIO_new_mem_buf((char*)Private_key.c_str(), -1);  // 创建内存 BIO 对象
-  RSA* rsa = PEM_read_bio_RSAPrivateKey(bio, NULL, NULL, NULL); // 从 BIO 对象读取私钥
-  BIO_free(bio);   // 释放 BIO 对象
-
-  // 将密文转换为字节数组
-  const unsigned char* encrypted_text_bytes = reinterpret_cast<const unsigned char*>(Encrypted_text.c_str()); // 获取密文字符串的字节数组
-  int encrypted_text_length = Encrypted_text.length(); // 获取密文长度
-
-  // 分配内存用于存储解密后的明文
-  unsigned char* decrypted_text = new unsigned char[RSA_size(rsa)]; // 依据 RSA 结构体大小分配内存
-
-  // 使用 RSA_PKCS1_PADDING 填充方式进行私钥解密
-  int decrypted_text_length = RSA_private_decrypt(encrypted_text_length, encrypted_text_bytes, decrypted_text, rsa, RSA_PKCS1_PADDING);
-
-  // 检查解密是否成功
-  if (decrypted_text_length == -1) {
-    RSA_free(rsa);  // 释放 RSA 结构体
-    delete[] decrypted_text;  // 释放解密后明文内存
-    throw std::runtime_error("RSA 解密失败");
-  }
-
-  // 将解密后的明文转换为字符串
-  std::string decrypted_text_string(reinterpret_cast<char*>(decrypted_text), decrypted_text_length); // 将解密后明文转换为字符串
-
-  // 释放内存并清理资源
-  RSA_free(rsa);  // 释放 RSA 结构体
-  delete[] decrypted_text;  // 释放解密后明文内存
-
-  return decrypted_text_string; // 返回解密后的明文
+RSA::~RSA() {
+    EVP_PKEY_free(pub_key);             // 释放公钥
+    EVP_PKEY_free(pri_key);             // 释放私钥
+    EVP_cleanup();                      // 清理 OpenSSL 库
 }
+
+std::string RSA::encrypt(const std::string& plain_text) {
+    // 初始化加密上下文
+    EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new(pub_key, nullptr);
+    if (!ctx) ERR("无法初始化加密上下文");
+    // 设置加密参数
+    if (EVP_PKEY_encrypt_init(ctx) <= 0 || EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
+        ERR("无法设置加密参数");
+    // 计算加密后的长度
+    size_t outlen;
+    if (EVP_PKEY_encrypt(ctx, nullptr, &outlen, (unsigned char *)plain_text.c_str(), plain_text.size()) <= 0)
+        ERR("无法计算加密后的长度");
+    // 加密
+    unsigned char *out = (unsigned char *)OPENSSL_malloc(outlen);
+    if (!out) ERR("无法分配内存");
+    if (EVP_PKEY_encrypt(ctx, out, &outlen, (unsigned char *)plain_text.c_str(), plain_text.size()) <= 0)
+        ERR("无法加密");
+    // 释放加密上下文
+    EVP_PKEY_CTX_free(ctx);
+    // 返回加密后的字符串
+    return std::string((char *)out, outlen);
+}
+
+std::string RSA::decrypt(const std::string& cipher_text) {
+    // 初始化解密上下文
+    EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new(pri_key, nullptr);
+    if (!ctx) ERR("无法初始化解密上下文");
+    // 设置解密参数
+    if (EVP_PKEY_decrypt_init(ctx) <= 0 || EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
+        ERR("无法设置解密参数");
+    // 计算解密后的长度
+    size_t outlen;
+    if (EVP_PKEY_decrypt(ctx, nullptr, &outlen, (unsigned char *)cipher_text.c_str(), cipher_text.size()) <= 0)
+        ERR("无法计算解密后的长度");
+    // 解密
+    unsigned char *out = (unsigned char *)OPENSSL_malloc(outlen);
+    if (!out) ERR("无法分配内存");
+    if (EVP_PKEY_decrypt(ctx, out, &outlen, (unsigned char *)cipher_text.c_str(), cipher_text.size()) <= 0)
+        ERR("无法解密");
+    // 释放解密上下文
+    EVP_PKEY_CTX_free(ctx);
+    // 返回解密后的字符串
+    return std::string((char *)out, outlen);
+}
+
+}   // namespace jiao
