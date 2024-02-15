@@ -22,7 +22,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    MainWindow(QWidget *parent = nullptr, const char* port="10086");
     ~MainWindow();
 
 private:
@@ -41,6 +41,8 @@ private:
     void send();                // 发送消息
     void login();               // 登录
     void addFriend();           // 添加好友
+    
+    std::map<int,  boost::asio::ip::tcp::socket> cs;
 
     QListWidget *_listWidget;       // 声明一个列表部件
     QStackedWidget *_stackedWidget; // 堆叠部件

@@ -2,8 +2,6 @@
 
 using namespace boost::asio;
 
-std::map<int, ip::tcp::socket> cs;
-
 void MainWindow::start_read(ip::tcp::socket& socket){
     char data[1024];
     // 异步读取数据
@@ -52,7 +50,7 @@ MainWindow::~MainWindow()
     delete _layout;
 }
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(QWidget *parent, const char* port)
     : QMainWindow(parent)
 {
     setWindowTitle("chat!chat!");
@@ -105,7 +103,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Boost ASIO
     io = new io_context();
-    ip::tcp::endpoint ep(ip::address::from_string("0.0.0.0"), 10086);
+    ip::tcp::endpoint ep(ip::address::from_string("0.0.0.0"), std::stoi(port));
     ac = new ip::tcp::acceptor(*io, ep);
     start_accept(*ac);
     
@@ -143,13 +141,33 @@ void MainWindow::addFriend()
     QDialog *dialog = new QDialog(this);
     QVBoxLayout *layout = new QVBoxLayout;
 
-    QLineEdit *lineEdit = new QLineEdit(this);
+    QLineEdit *lineEdit1 = new QLineEdit(this); // ip
+    QLineEdit *lineEdit2 = new QLineEdit(this); // port
     QPushButton *button = new QPushButton(tr("添加好友"), this);
 
-    layout->addWidget(lineEdit);
+    layout->addWidget(lineEdit1);
+    layout->addWidget(lineEdit2);
     layout->addWidget(button);
-
     dialog->setLayout(layout);
+
+    connect(button, &QPushButton::clicked, this, [&, this, dialog](){
+        // 主动连接
+        ip::tcp::socket socket(*io);
+        ip::tcp::endpoint ep(ip::address::from_string(lineEdit1->text().toStdString()), std::stoi(lineEdit2->text().toStdString()));
+        socket.connect(ep);
+        int fd = socket.native_handle();
+        std::cout << fd << " CONNECT SUCCESS! " << std::endl;
+        // 增加一个窗口
+        _listWidget->addItem(QString::number(fd));
+        _chatRecord[fd] = new QTextEdit(this);
+        _chatRecord[fd] -> setReadOnly(true);
+        _stackedWidget->addWidget(_chatRecord[fd]);
+        cs.insert(std::make_pair(fd, std::move(socket)));
+        start_read(cs.at(fd));
+
+        dialog->close();
+    });
+
     dialog->exec();
 }
 
@@ -157,6 +175,10 @@ void MainWindow::send()
 {
     QString text = _sendTextEdit->toPlainText();
 
-    text.replace("\n", "\n>> ");
+    // 拿到 socket
+    cs.at(_listWidget->currentItem()->text().toInt()).write_some(buffer(text.toStdString()));
+    // 消息框更新
+    _chatRecord[_listWidget->currentItem()->text().toInt()]->append(text);
+
     _sendTextEdit->clear();
 }
