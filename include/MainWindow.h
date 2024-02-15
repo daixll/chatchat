@@ -10,6 +10,12 @@
 #include <QDialog>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QStackedWidget>
+#include <QTimer>
+
+#include <boost/asio.hpp>
+#include <iostream>
+#include <map>
 
 class MainWindow : public QMainWindow
 {
@@ -20,10 +26,8 @@ public:
     ~MainWindow();
 
 private:
-    QString _serverIP;  // 服务器IP
-    int     _serverPort;// 服务器端口
-
-    QHBoxLayout *_rrLayout;     // 左侧布局
+    QHBoxLayout *_rrLayout;     // 右侧下方布局
+    QTextEdit   *_sendTextEdit; // 发送消息
     QPushButton *_SEND;         // 发送按钮
 
     QVBoxLayout *_rightLayout;  // 右侧上下布局
@@ -33,14 +37,17 @@ private:
 
     QAction     *_login;        // 登录
     QAction     *_addFriend;    // 添加好友
-    QAction     *_changeServer; // 切换服务器
 
     void send();                // 发送消息
     void login();               // 登录
     void addFriend();           // 添加好友
-    void changeServer();        // 切换服务器
 
     QListWidget *_listWidget;       // 声明一个列表部件
-    QTextEdit   *_receiveTextEdit;  // 接收消息
-    QTextEdit   *_sendTextEdit;     // 发送消息
+    QStackedWidget *_stackedWidget; // 堆叠部件
+    std::map<int, QTextEdit*> _chatRecord; // 聊天记录
+    
+    boost::asio::io_context* io;
+    boost::asio::ip::tcp::acceptor* ac;
+    void start_read(boost::asio::ip::tcp::socket& socket);
+    void start_accept(boost::asio::ip::tcp::acceptor& ac);
 };
