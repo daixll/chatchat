@@ -2,9 +2,15 @@ QT += widgets
 
 CONFIG += debug
 
+LIBS += -lssl -lcrypto
+
 HEADERS += \
-    include/MainWindow.h
+    Headers/MainWindow.h \
+    Headers/CC.h \
+    Headers/RSA.h \
 
 SOURCES += \
-    src/MainWindow.cpp \
-    src/main.cpp
+    Sources/MainWindow.cpp \
+    Sources/CC.cpp \
+    Sources/RSA.cpp \
+    main.cpp
