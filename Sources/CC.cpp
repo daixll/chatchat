@@ -14,6 +14,10 @@ CC::CC(const int port, const std::string pubk, const std::string prik){
     start_accept(*ac6);
 }
 
+void CC::init2(QListWidget* lw, QStackedWidget* sw, std::map<int, QTextEdit*>* cr){
+    lw_ = lw, sw_ = sw, cr_ = cr;   // 引入列表，堆叠窗口，消息框
+}
+
 CC::~CC(){
     delete io;
     delete ac4;
@@ -31,6 +35,13 @@ void CC::start_accept(ip::tcp::acceptor& ac){
             int fd = socket.native_handle();
             std::cout << fd << " ACC SUCCESS! " << std::endl;
             
+            //--- 增加窗口
+            lw_->addItem(QString::number(fd));
+            cr_->insert(std::make_pair(fd, new QTextEdit()));
+            cr_->at(fd)->setReadOnly(true);
+            sw_->addWidget(cr_->at(fd));
+            //--- over
+
             cs.insert(std::make_pair(fd, std::move(socket)));
 
             start_read(cs.at(fd));  // 首次会读取到对方的公钥
@@ -49,26 +60,34 @@ void CC::start_read(ip::tcp::socket& socket){
     socket.async_read_some(buffer(data, sizeof data),
         [&, this](const boost::system::error_code& ec, std::size_t len){
             if(!ec){
-                char data_copy[10240];
-                memset(data_copy, '\0', sizeof data_copy);
-                memcpy(data_copy, data, sizeof data);
-                std::cout << socket.native_handle() << " RECV MESSAGE " << len << " : " << data_copy << std::endl;
+                //char data_copy[10240];
+                //memset(data_copy, '\0', sizeof data_copy);
+                //memcpy(data_copy, data, sizeof data);
+                std::cout << socket.native_handle() << " RECV MESSAGE " << len << " : " << data << std::endl;
                 
                 if(ks.find(socket.native_handle()) == ks.end()){
-                    ks.insert(std::make_pair(socket.native_handle(), new jiao::RSA(data_copy,"",true)));
+                    // 保存对方的公钥
+                    ks.insert(std::make_pair(socket.native_handle(), new jiao::RSA(data,"",true)));
                 }else{
                     // 使用自己的私钥解密
                     auto msg = rsa->decrypt(std::vector<uint8_t>(data, data+len));
                     std::cout << "DECRYPTED MESSAGE " << msg.size() << " : " << msg.data() << std::endl;
 
                     // 消息框更新
-                    update();
+                    cr_->at(socket.native_handle())->append(QString::fromStdString(std::string(msg.begin(), msg.end())));
+
                 }
 
                 start_read(socket);
             }else{
                 std::cout << socket.native_handle() << " RECV ERROR! " << ec.message() << " " << error::operation_aborted << std::endl;
+                // 删除列表
+                lw_->takeItem(lw_->row(lw_->findItems(QString::number(socket.native_handle()), Qt::MatchExactly).at(0)));
                 // 删除消息框
+                cr_->erase(socket.native_handle());
+                // 删除 socket
+                cs.erase(socket.native_handle());
+
                 return ;
             }
         });
@@ -96,8 +115,4 @@ void CC::send(int fd, std::string msg, bool flg){   // flg 为 1 时使用 fd �
     }else{
         cs.at(fd).write_some(buffer(msg));
     }
-}
-
-void CC::update(){
-
 }

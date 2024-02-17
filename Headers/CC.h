@@ -5,6 +5,9 @@
 #include <boost/asio.hpp>
 #include <iostream>
 #include <map>
+#include <QListWidget>
+#include <QStackedWidget>
+#include <QTextEdit>
 
 using namespace boost::asio;
 
@@ -17,8 +20,12 @@ public:
     int conn(std::string ip, int port);
     void send(int fd, std::string msg, bool flg=1);
 
+    void init2(QListWidget* lw, QStackedWidget* sw, std::map<int, QTextEdit*>* cr);
+
 private:
-    void update();   // 更新消息框
+    QListWidget* lw_;
+    QStackedWidget* sw_;
+    std::map<int, QTextEdit*>* cr_;
 
     jiao::RSA* rsa;
 

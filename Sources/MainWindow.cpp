@@ -70,7 +70,8 @@ MainWindow::MainWindow(QWidget *parent)
             
             // 启动监听 初始化自己的密钥对
             cc = new CC(l1.text().toInt(), l2.text().toStdString(), l3.text().toStdString());
-            
+            cc->init2(&ListWidget_, &StackWidget_, &ChatRecord_);
+
             // 伪异步IO
             QTimer *timer = new QTimer(this);
             connect(timer, &QTimer::timeout, this, [&](){
@@ -134,6 +135,9 @@ MainWindow::MainWindow(QWidget *parent)
         int fd = ListWidget_.currentItem()->text().toInt();
         std::cout << "SEND TO " << fd << std::endl;
         cc->send(fd, SendEdit_.toPlainText().toStdString());
+
+        // 消息框更新
+        ChatRecord_[fd]->append("我：" + SendEdit_.toPlainText());
 
         SendEdit_.clear();
     });
