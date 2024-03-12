@@ -2,7 +2,7 @@
 
 namespace jiao{
 
-void RSA::show(std::string& str) {
+void RSA::show(std::string str) {
     for(int i=0; i<(int)str.size(); ++i)
         printf("%02X", (unsigned char)str[i]);
 }
@@ -18,27 +18,24 @@ void RSA::WAR(const std::string& msg) {
 }
 
 std::string RSA::read_file(const std::string& path) {
-        std::ifstream ifs(path);
-        if (!ifs){
-            WAR("无法打开文件 " + path);
-            return "";
-        }
-        std::string content;
-        ifs.seekg(0, std::ios::end);
-        content.resize(ifs.tellg());
-        ifs.seekg(0, std::ios::beg);
-        ifs.read(&content[0], content.size());
-        ifs.close();
-        return content;
+    std::ifstream ifs(path);
+    if (!ifs){
+        WAR("无法打开文件 " + path);
+        return "";
     }
+    std::string content;
+    ifs.seekg(0, std::ios::end);    // 将文件流读取位置设置到文件末尾
+    content.resize(ifs.tellg());    // 设置 content 的大小
+    ifs.seekg(0, std::ios::beg);    // 文件流定位到文件开头
+    ifs.read(&content[0], content.size());
+    ifs.close();
+    return content;
+}
 
 RSA::RSA(const std::string& public_key_path, const std::string& private_key_path, bool flg) {
-    // 初始化 OpenSSL 库
-    OpenSSL_add_all_algorithms();
-    // 更强的随机数生成器
-    RAND_load_file("/dev/urandom", 32);
+    OpenSSL_add_all_algorithms();       // 初始化 OpenSSL 库
+    
     // 读取公钥和私钥
-
     std::string public_key_str;
     std::string private_key_str;
 
@@ -49,6 +46,7 @@ RSA::RSA(const std::string& public_key_path, const std::string& private_key_path
         public_key_str = public_key_path,
         private_key_str = private_key_path;
 
+    // 外部使用的公钥
     pubk = public_key_str;
 
     // 初始化公钥

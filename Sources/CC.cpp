@@ -63,7 +63,10 @@ void CC::start_read(ip::tcp::socket& socket){
                 //char data_copy[10240];
                 //memset(data_copy, '\0', sizeof data_copy);
                 //memcpy(data_copy, data, sizeof data);
-                std::cout << socket.native_handle() << " RECV MESSAGE " << len << " : " << data << std::endl;
+                std::cout << socket.native_handle() << " RECV MESSAGE " << len << " : ";
+                rsa->show(std::string(data, data + len));
+                std::cout << std::endl;
+                //<< data << std::endl;
                 
                 if(ks.find(socket.native_handle()) == ks.end()){
                     // 保存对方的公钥
