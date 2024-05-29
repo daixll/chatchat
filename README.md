@@ -1,5 +1,5 @@
 <h1 align="center">
-  <a href="https://github.com/zzzgydi/clash-verge">chatchat</a>
+  <a href="https://github.com/daixll/chatchat">chatchat</a>
   <br>
 </h1>
 
