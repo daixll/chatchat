@@ -1,11 +1,8 @@
 <h1 align="center">
   <a href="https://github.com/daixll/chatchat">chatchat</a>
-  <br>
-</h1>
 
-<h3 align="center">
-端对端加密的聊天软件.
-</h3>
+  <h3 align="center">端对端加密的聊天软件.</h3>
+</h1>
 
 ## 界面及功能
 
@@ -21,7 +18,6 @@
 
 > 目前所使用的版本
 
-* [Qt](https://www.qt.io/download-qt-installer-oss) 6.7.0
-* [Boost](https://www.boost.org/users/download/) 1.85.0
-* [FFmpeg](https://ffmpeg.org/download.html) 7.0
-* [OpenSSL](https://www.openssl.org/source/) 3.3.0
+| [Qt](https://www.qt.io/download-qt-installer-oss) | [Boost](https://www.boost.org/users/download/) | [FFmpeg](https://ffmpeg.org/download.html) | [OpenSSL](https://www.openssl.org/source/) |
+|:-:|:-:|:-:|:-:|
+| 6.7.1 | 1.85.0 | 7.0 | 3.3.1 |
