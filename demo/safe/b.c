@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <openssl/pem.h>
 
-#define MBLOCK 1280 // 1kb, 10240 byte
+#define MBLOCK 256 // 256byte, 2048 bit
 
 int8_t ERRIF(int8_t flg, const char* target, const char* msg){
     if(flg == 1){
@@ -40,9 +40,9 @@ int main(char arg, char* argc[]){
     size_t flen = ftell(fptr_in);
 
     // 申请内存空间
-    char* ptr1 = malloc(MBLOCK * 10);
+    char* ptr1 = malloc(MBLOCK);
     ERRIF(ptr1 == NULL, "ptr1", "内存申请失败");
-    char* ptr2 = malloc(MBLOCK * 10);
+    char* ptr2 = malloc(MBLOCK * 1000000);
     ERRIF(ptr2 == NULL, "ptr2", "内存申请失败");
 
     // 初始化加解密上下文
@@ -52,6 +52,7 @@ int main(char arg, char* argc[]){
     ERRIF(EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0, "ctx", "设置加密填充参数失败");
 
     // 分段读取文件并解密
+    size_t Outlen = 0;
     for(size_t i=0; i<flen; i+=MBLOCK){
         // 计算每块的长度 i,i+len
         fseek(fptr_in, i, SEEK_SET);
@@ -64,11 +65,12 @@ int main(char arg, char* argc[]){
         size_t outlen = 0;
         ERRIF(EVP_PKEY_decrypt(ctx, NULL, &outlen, ptr1, len) <= 0, "ctx", "计算解密后长度失败");
         // 解密
-        ERRIF(EVP_PKEY_decrypt(ctx, ptr2, &outlen, ptr1, len) <= 0, "ctx", "解密失败");
-        // 将内存写入明文
-        size_t write_len = fwrite(ptr2, 1, outlen, fptr_out);
-        ERRIF(write_len != outlen, argc[3], "内存 -> 明文 [错误]");
+        ERRIF(EVP_PKEY_decrypt(ctx, ptr2+Outlen, &outlen, ptr1, len) <= 0, "ctx", "解密失败");
+        Outlen += outlen;
     }
+    // 将内存写入明文
+    size_t write_len = fwrite(ptr2, 1, Outlen, fptr_out);
+    ERRIF(write_len != Outlen, argc[3], "内存 -> 明文 [错误]");
 
     // 释放资源
     EVP_PKEY_CTX_free(ctx);
