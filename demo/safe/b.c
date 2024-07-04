@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <openssl/pem.h>
 
-#define MBLOCK 256 // 256byte, 2048 bit
+#define MBLOCK 256 // 256 byte, 2048 bit
 
 int8_t ERRIF(int8_t flg, const char* target, const char* msg){
     if(flg == 1){
@@ -65,12 +65,18 @@ int main(char arg, char* argc[]){
         size_t outlen = 0;
         ERRIF(EVP_PKEY_decrypt(ctx, NULL, &outlen, ptr1, len) <= 0, "ctx", "计算解密后长度失败");
         // 解密
-        ERRIF(EVP_PKEY_decrypt(ctx, ptr2+Outlen, &outlen, ptr1, len) <= 0, "ctx", "解密失败");
+        // 存算分离
+        //ERRIF(EVP_PKEY_decrypt(ctx, ptr2+Outlen, &outlen, ptr1, len) <= 0, "ctx", "解密失败");
+        ERRIF(EVP_PKEY_decrypt(ctx, ptr2, &outlen, ptr1, len) <= 0, "ctx", "解密失败");
         Outlen += outlen;
+        
+        size_t write_len = fwrite(ptr2, 1, outlen, fptr_out);
+        ERRIF(write_len != outlen, argc[3], "内存 -> 明文 [错误]");
     }
     // 将内存写入明文
-    size_t write_len = fwrite(ptr2, 1, Outlen, fptr_out);
-    ERRIF(write_len != Outlen, argc[3], "内存 -> 明文 [错误]");
+    // 存算分离
+    //size_t write_len = fwrite(ptr2, 1, Outlen, fptr_out);
+    //ERRIF(write_len != Outlen, argc[3], "内存 -> 明文 [错误]");
 
     // 释放资源
     EVP_PKEY_CTX_free(ctx);
