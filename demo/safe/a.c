@@ -63,7 +63,7 @@ int main(char arg, char* argc[]){
         // 确定加密后长度
         size_t outlen = 0;
         ERRIF(EVP_PKEY_encrypt(ctx, NULL, &outlen, ptr1, len) <= 0, "ctx", "计算加密后长度失败");
-        printf("outlen: %ld\n", outlen);
+        //printf("outlen: %ld\n", outlen);
         // 加密
         ERRIF(EVP_PKEY_encrypt(ctx, ptr2, &outlen, ptr1, len) <= 0, "ctx", "加密失败");
         // 将内存写入密文
