@@ -5,10 +5,11 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/home/jiao/Software/OpenSSL-3.3.1/**",
-                "/home/jiao/Software/Boost-1.85.0/**"
+                "/home/jiao/Software/Boost-1.85.0/**",
+                "/home/jiao/Software/FFmpeg-7.0.1/**"
             ],
             "compilerPath": "/usr/bin/gcc",
-            "cppStandard": "c++23"
+            "cppStandard": "c++20"
         }
     ],
     "version": 4
