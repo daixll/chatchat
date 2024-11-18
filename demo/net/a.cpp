@@ -64,7 +64,7 @@ private:
             boost::asio::buffer(buf, 2560),
             [&, this](const boost::system::error_code& ec, std::size_t len){
                 if(!ec){
-                    buf[len-1] = '\0';
+                    buf[len] = '\0';
                     std::cout << sock.native_handle() << " " << len << " " << buf << std::endl;
 
                     _start_read(sock);
