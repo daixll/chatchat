@@ -8,7 +8,7 @@ bool ERRIF(bool flg, const std::string &target, const std::string &msg) {
     std::cerr << msg << std::endl;
     exit(1);
   }
-  //std::cout << "成功：" + target + " " + msg + " " << std::endl;
+  std::cout << "成功：" + target + " " + msg + " " << std::endl;
   return true;
 }
 }  // namespace UTIL

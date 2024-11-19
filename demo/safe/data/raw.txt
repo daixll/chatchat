@@ -3,3 +3,12 @@
 ./a key/one/pub.pem data/raw.png data/encrypt_output/mid.bin && ./b key/one/pri.pem data/encrypt_output/mid.bin data/decrypt_output/out.png
 
 ./a key/one/pub.pem data/raw.mp4 data/encrypt_output/mid.bin && ./b key/one/pri.pem data/encrypt_output/mid.bin data/decrypt_output/out.mp4
+
+
+1.
+
+cd ~/Desktop/chatchat/demo/safe && ./a key/one/pub.pem data/raw.png data/encrypt_output/mid.bin && ./b key/one/pri.pem data/encrypt_output/mid.bin data/decrypt_output/out.png
+
+cd ~/Desktop/chatchat && ./build/bin/chatchat
+
+2. 

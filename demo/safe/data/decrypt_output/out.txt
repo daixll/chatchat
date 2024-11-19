@@ -1,3 +1,5 @@
+aaaa
+
 ./a key/one/pub.pem data/raw.txt data/encrypt_output/mid.bin && ./b key/one/pri.pem data/encrypt_output/mid.bin data/decrypt_output/out.txt
 
 ./a key/one/pub.pem data/raw.png data/encrypt_output/mid.bin && ./b key/one/pri.pem data/encrypt_output/mid.bin data/decrypt_output/out.png

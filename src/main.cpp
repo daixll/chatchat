@@ -13,14 +13,10 @@ int main() {
   SAFE::Encrypt enc;
   SAFE::Decrypt dec;
 
-  //enc.loadPubKeyFromFile("demo/safe/key/one/pub.pem");
+  enc.loadPubKeyFromFile("demo/safe/key/one/pub.pem");
   dec.loadPriKeyFromFile("demo/safe/key/one/pri.pem");
 
-  //enc.encrypt(str1, str2);
-
-  //std::cout << "继续解密？" << std::endl;
-  //std::cin >> flg;
-
+  enc.encrypt(str1, str2);
   dec.decrypt(str2, str3);
   return 0;
 }

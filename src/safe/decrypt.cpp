@@ -18,44 +18,41 @@ Decrypt::~Decrypt() {}
 
 void Decrypt::decrypt(const std::string& inFileName,
                       const std::string& outFileName) {
-  // Open the ciphertext file in binary read mode
   cipherText.reset(fopen(inFileName.c_str(), "rb"));
   UTIL::ERRIF(cipherText == nullptr, inFileName, "打开密文");
-
-  // Open the plaintext file in binary write mode
   plainText.reset(fopen(outFileName.c_str(), "wb"));
   UTIL::ERRIF(plainText == nullptr, outFileName, "打开明文");
 
-  // Calculate the size of the ciphertext file
+  // 计算文件大小
   fseek(cipherText.get(), 0, SEEK_END);
   size_t fLen = ftell(cipherText.get());
-  fseek(cipherText.get(), 0, SEEK_SET); // Rewind to the beginning of the file
+  fseek(cipherText.get(), 0, SEEK_SET);
 
-  // Calculate the total number of blocks
+  // 块的数量
   size_t total_blocks = (fLen + MBLOCK - 1) / MBLOCK;
 
-  // Pre-allocate the vector to hold all blocks
+  // 确定每块的大小
   auto mPtr = std::make_unique<std::vector<std::vector<uint8_t>>>();
   mPtr->resize(total_blocks);
 
-  // Vector to hold all threads
+  // 引入多线程，分段读取文件并解密
   std::vector<std::thread> threads;
-  threads.reserve(total_blocks); // Reserve space to prevent reallocations
+  threads.reserve(total_blocks); // 预留空间
 
   for (size_t i = 0, idx = 0; i < fLen; i += MBLOCK, idx++) {
-    // Calculate the length of the current block
+    // 计算当前块的大小
     size_t len = (i + MBLOCK > fLen) ? (fLen - i) : MBLOCK;
 
-    // Resize the current block vector to hold the ciphertext
+    // 重置大小
     (*mPtr)[idx].resize(len);
 
-    // Read the ciphertext block into memory
+    // 读取密文到内存
     UTIL::ERRIF(fread((*mPtr)[idx].data(), 1, len, cipherText.get()) != len,
                 inFileName, "密文 -> 内存");
 
-    // Spawn a thread to decrypt this block
+    // 多线程解密
     threads.emplace_back([&, idx, len]() {
-      // Initialize decryption context
+      // 初始化加解密上下文
       std::unique_ptr<EVP_PKEY_CTX, decltype(&EVP_PKEY_CTX_free)> ctx(
           EVP_PKEY_CTX_new(privateKey.get(), nullptr), EVP_PKEY_CTX_free);
 
@@ -65,36 +62,36 @@ void Decrypt::decrypt(const std::string& inFileName,
           EVP_PKEY_CTX_set_rsa_padding(ctx.get(), RSA_PKCS1_OAEP_PADDING) <= 0,
           "ctx", "设置解密填充参数");
 
-      // Determine the length of the decrypted data
+      // 确定解密后长度
       size_t lenOut = 0;
       UTIL::ERRIF(
           EVP_PKEY_decrypt(ctx.get(), nullptr, &lenOut,
                            (*mPtr)[idx].data(), len) <= 0,
           inFileName, "确定解密长度");
 
-      // Allocate buffer for decrypted data
+      // 解密后的数据
       std::vector<uint8_t> decryptedData(lenOut);
 
-      // Perform the decryption
+      // 解密
       UTIL::ERRIF(
           EVP_PKEY_decrypt(ctx.get(), decryptedData.data(), &lenOut,
                            (*mPtr)[idx].data(), len) <= 0,
           "ctx", "解密");
 
-      // Resize and store the decrypted data
+      // 重置大小
       decryptedData.resize(lenOut);
       (*mPtr)[idx] = std::move(decryptedData);
     });
   }
 
-  // Wait for all threads to complete
+  // 等待所有线程完成
   for (auto& t : threads) {
     if (t.joinable()) {
       t.join();
     }
   }
 
-  // Write all decrypted data to the plaintext file
+  // 写入到明文
   for (const auto& block : *mPtr) {
     UTIL::ERRIF(fwrite(block.data(), 1, block.size(), plainText.get()) != block.size(),
                 outFileName, "内存 -> 明文");
